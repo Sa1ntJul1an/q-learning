@@ -21,44 +21,18 @@ class Cell{
 
         bool isExplored();
 
-        void setFrontier(bool);
-
-        bool isFrontier();
-
         void setPath(bool);
         
         bool isPath();
 
-        void setParent(Cell*);
-
-        Cell* getParent();
-
-        void addNeighbor(Cell*);
-
-        std::vector<Cell*> getNeighbors();
-
-        void setFScore(float);
-
-        float getFScore();
-
-        void setGScore(float);
-
-        float getGScore();
-
         void resetState();
 
     private:
-        std::vector<Cell*> _neighbors;
-        Cell* _parent;
-
         bool _isGoal;
         bool _isObstacle;
         bool _isExplored;
-        bool _isFrontier;
         bool _isPath;
 
-        float _gScore;
-        float _fScore;
         std::vector<int> _position;
 };
 

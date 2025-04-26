@@ -9,7 +9,7 @@ using namespace sf;
 using namespace std;
 
 // width in height, in grid cells
-const int WIDTH = 30;
+const int WIDTH = 60;
 const int HEIGHT = 30;
 
 // size of cell, pixels
@@ -30,6 +30,11 @@ Color frontier_color = Color(255, 0, 255);
 Color path_color = Color(0, 255, 255);
 Color startColor(0, 255, 0);
 Color goalColor(255, 0, 0);
+int greyValue = 50;
+Color gridColor(greyValue, greyValue, greyValue);
+
+RectangleShape verticalLine(Vector2f(2, CELL_SIZE * HEIGHT));
+RectangleShape horizontalLine(Vector2f(CELL_SIZE * WIDTH, 2));
 
 
 int main(){
@@ -140,15 +145,13 @@ int main(){
     renderWindow.clear();
 
     Color color;
-    for (int row = 0; row < WIDTH; row ++){
+    for (int row = 0; row < HEIGHT; row ++){
       for (int col = 0; col < WIDTH; col ++){
-        Cell* currentCell = cells[row][col];
-        vector<int> cellPosition = cells[row][col]->getPosition();
+        Cell* currentCell = cells[col][row];
+        vector<int> cellPosition = currentCell->getPosition();
         cellRect.setPosition(Vector2f(double(cellPosition[0] * CELL_SIZE), double(cellPosition[1] * CELL_SIZE)));
         if (currentCell->isPath()){
           color = path_color;
-        }else if (currentCell->isFrontier()){
-          color = frontier_color;
         }else if (currentCell->isExplored()){
           color = explored_color;
         } else if (currentCell->isObstacle()){
@@ -172,11 +175,7 @@ int main(){
     renderWindow.draw(cellRect);
 
     // DRAW VERTICAL GRID LINES
-    int greyValue = 50;
-    Color gridColor(greyValue, greyValue, greyValue);
     for (int i = 0; i <= WIDTH; i++){
-      RectangleShape verticalLine(Vector2f(2, CELL_SIZE * HEIGHT));
-      Color color(greyValue, greyValue, greyValue);
       verticalLine.setFillColor(gridColor);
       verticalLine.setPosition(Vector2f(i * CELL_SIZE, 0));
       renderWindow.draw(verticalLine);
@@ -184,7 +183,6 @@ int main(){
 
     // DRAW HORIZONTAL GRID LINES
     for (int i = 0; i <= HEIGHT; i++){
-      RectangleShape horizontalLine(Vector2f(CELL_SIZE * HEIGHT, 2));
       horizontalLine.setFillColor(gridColor);
       horizontalLine.setPosition(Vector2f(0, i * CELL_SIZE));
       renderWindow.draw(horizontalLine);
