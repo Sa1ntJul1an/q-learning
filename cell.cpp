@@ -1,16 +1,16 @@
 #include "cell.h"
 #include <math.h>
-#include <vector>
+#include <utility>
 
 Cell::Cell(){
-    _position = std::vector<int> {0, 0};
+    _position = std::pair<int, int> {0, 0};
     _isGoal = false;
     _isObstacle = false;
     _isExplored = false;
     _isPath = false;
 }
 
-Cell::Cell (std::vector<int> position){
+Cell::Cell (std::pair<int, int> position){
     _position = position;
     _isGoal = false;
     _isObstacle = false;
@@ -18,7 +18,7 @@ Cell::Cell (std::vector<int> position){
     _isPath = false;
 }
 
-std::vector<int> Cell::getPosition(){
+std::pair<int, int> Cell::getPosition(){
     return this->_position;
 }
 

@@ -15,8 +15,8 @@ const int HEIGHT = 30;
 // size of cell, pixels
 const int CELL_SIZE = 30;
 
-const vector<int> start = {0, HEIGHT - 1};
-const vector<int> goal = {WIDTH - 1, 0};
+const pair<int, int> start = {0, HEIGHT - 1};
+const pair<int, int> goal = {WIDTH - 1, 0};
 
 Cell * startCell = new Cell(start);
 Cell * goalCell = new Cell(goal);
@@ -41,28 +41,24 @@ int main(){
 
   vector<float> mousePosition;
 
-  vector<vector<Cell*>> cells;
+  std::map<std::pair<int, int>, Cell*> cells;
 
   // fill state space 
-  for (int row = 0; row < WIDTH; row ++){
-    vector<Cell*> column;
-    for (int col = 0; col < HEIGHT; col ++){
-      vector<int> position = {row, col};
-      if (position == start){
-        column.push_back(startCell);
-      } else if (position == goal){
-        column.push_back(goalCell);
+  for (int row = 0; row < HEIGHT; row ++){
+    for (int col = 0; col < WIDTH; col ++){
+      pair<int, int> position = {col, row}; 
+      if (position == goal) {
+        cells[position] = goalCell;
       } else{
-        Cell* cell = new Cell({row, col});
-        column.push_back(cell);
+        Cell* cell = new Cell(position);
+        cells[position] = cell;
       }
     }
-    cells.push_back(column);
   }
   
   // SEARCH RENDER WINDOW
   // =======================================================================
-  RenderWindow renderWindow(VideoMode(WIDTH * CELL_SIZE + 1, HEIGHT * CELL_SIZE + 2), "Search Algorithm");
+  RenderWindow renderWindow(VideoMode(WIDTH * CELL_SIZE + 1, HEIGHT * CELL_SIZE + 2), "Q Learning");
   // =======================================================================
 
   Font font;
@@ -91,16 +87,18 @@ int main(){
       if (Mouse::isButtonPressed(Mouse::Left)){       // set as obstacle
         int row = mousePosition[0] / CELL_SIZE;
         int col = mousePosition[1] / CELL_SIZE;
+        pair<int, int> position = {row, col};
 
         if (row < WIDTH && row >= 0 && col < HEIGHT && col >= 0) {
-          cells[row][col]->setObstacle(true);
+          cells[position]->setObstacle(true);
         }
       } else if (Mouse::isButtonPressed(Mouse::Right)) {      // remove obstacle
         int row = mousePosition[0] / CELL_SIZE;
         int col = mousePosition[1] / CELL_SIZE;
+        pair<int, int> position = {row, col};
 
         if (row < WIDTH && row > 0 && col < HEIGHT && col > 0) {
-          cells[row][col]->setObstacle(false);
+          cells[position]->setObstacle(false);
         }
       }
     }
@@ -116,12 +114,12 @@ int main(){
     }
     if (Keyboard::isKeyPressed(Keyboard::R)){       // R to reset
       cout << "Restarting search, clearing state space." << endl;
-      for (int row = 0; row < WIDTH; row++){
-        for (int col = 0; col < HEIGHT; col++){
-          cells[row][col]->resetState();
+      for (int row = 0; row < HEIGHT; row++){
+        for (int col = 0; col < WIDTH; col++){
+          pair<int, int> position = {col, row};
+          cells[position]->resetState();
         }
       }
-      renderWindow.setFramerateLimit(60);
       iteration = 0;
       learning = false;
     }
@@ -144,34 +142,28 @@ int main(){
     // ==========================================================
     renderWindow.clear();
 
-    Color color;
     for (int row = 0; row < HEIGHT; row ++){
       for (int col = 0; col < WIDTH; col ++){
-        Cell* currentCell = cells[col][row];
-        vector<int> cellPosition = currentCell->getPosition();
-        cellRect.setPosition(Vector2f(double(cellPosition[0] * CELL_SIZE), double(cellPosition[1] * CELL_SIZE)));
+        pair<int, int> position = {col, row};
+        Cell* currentCell = cells[position];
+        pair<int, int> cellPosition = currentCell->getPosition();
+        cellRect.setPosition(Vector2f(double(cellPosition.first * CELL_SIZE), double(cellPosition.second * CELL_SIZE)));
         if (currentCell->isPath()){
-          color = path_color;
+          cellRect.setFillColor(path_color);
         }else if (currentCell->isExplored()){
-          color = explored_color;
+          cellRect.setFillColor(explored_color);
         } else if (currentCell->isObstacle()){
-          color = obstacle_color;
+          cellRect.setFillColor(obstacle_color);
         } else {
-          color = default_color;
+          cellRect.setFillColor(default_color);
         }
-        cellRect.setFillColor(color);
         renderWindow.draw(cellRect);
       }
     }
 
-    // DRAW START
-    cellRect.setFillColor(startColor);
-    cellRect.setPosition(Vector2f(double(start.at(0) * CELL_SIZE), double(start.at(1) * CELL_SIZE)));
-    renderWindow.draw(cellRect);
-
     // DRAW GOAL
     cellRect.setFillColor(goalColor);
-    cellRect.setPosition(Vector2f(double(goal.at(0) * CELL_SIZE), double(goal.at(1) * CELL_SIZE)));
+    cellRect.setPosition(Vector2f(double(goal.first * CELL_SIZE), double(goal.second * CELL_SIZE)));
     renderWindow.draw(cellRect);
 
     // DRAW VERTICAL GRID LINES
@@ -196,9 +188,10 @@ int main(){
   delete startCell;
   delete goalCell;
 
-  for (int row = 0; row < WIDTH; row ++){
-    for (int col = 0; col < HEIGHT; col ++){
-      delete cells.at(row).at(col);
+  for (int row = 0; row < HEIGHT; row ++){
+    for (int col = 0; col < WIDTH; col ++){
+      pair<int, int> position = {col, row};
+      delete cells[position];
     }
   }
 
