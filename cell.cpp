@@ -30,6 +30,10 @@ bool Cell::isObstacle(){
     return this->_isObstacle;
 }
 
+bool Cell::isGoal() {
+  return _isGoal;
+}
+
 void Cell::setExplored(bool isExplored){
     this->_isExplored = isExplored;
 }

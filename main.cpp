@@ -1,8 +1,11 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Window/Keyboard.hpp>
 #include <iostream>
 #include <cmath>
+#include <string>
 
 #include "cell.h"
+#include "q-learner.h"
 
 
 using namespace sf;
@@ -41,6 +44,11 @@ int main(){
 
   vector<float> mousePosition;
 
+  // RENDER WINDOW
+  // =================================================================================================
+  RenderWindow renderWindow(VideoMode(WIDTH * CELL_SIZE + 1, HEIGHT * CELL_SIZE + 2), "Q Learning");
+  // =================================================================================================
+
   std::map<std::pair<int, int>, Cell*> cells;
 
   // fill state space 
@@ -56,11 +64,6 @@ int main(){
     }
   }
   
-  // SEARCH RENDER WINDOW
-  // =======================================================================
-  RenderWindow renderWindow(VideoMode(WIDTH * CELL_SIZE + 1, HEIGHT * CELL_SIZE + 2), "Q Learning");
-  // =======================================================================
-
   Font font;
   FileInputStream fontIn;
   fontIn.open("slkscr.ttf");
@@ -77,19 +80,30 @@ int main(){
   bool learning = false;
   int iteration = 0;
 
-  const int ITERATIONS = 10000;
+  const int EPOCHS = 10000;
+  const float GAMMA = 0.7;
+  const float ALPHA = 0.8;
+  const float initEpsilon = 0.9;
+  const float finalEpsilon = 0.2;
+  const int numActions = 5;
+  const int maxIterationsPerEpoch = 500;
+
+  // Q learning algorithm 
+  QLearner qLearner = QLearner(WIDTH, HEIGHT, cells, CELL_SIZE, GAMMA, ALPHA, initEpsilon, finalEpsilon, numActions, EPOCHS, maxIterationsPerEpoch, {CELL_SIZE / 2.0, CELL_SIZE / 2.0});
+
+  qLearner.train();
 
   while(renderWindow.isOpen()){
 
     mousePosition = {float(Mouse::getPosition(renderWindow).x), float(Mouse::getPosition(renderWindow).y)};
 
-    if (!learning && !(iteration >= ITERATIONS)){
+    if (!learning && !(iteration >= EPOCHS)){
       if (Mouse::isButtonPressed(Mouse::Left)){       // set as obstacle
-        int row = mousePosition[0] / CELL_SIZE;
-        int col = mousePosition[1] / CELL_SIZE;
-        pair<int, int> position = {row, col};
+        int col = mousePosition[0] / CELL_SIZE;
+        int row = mousePosition[1] / CELL_SIZE;
+        pair<int, int> position = {col, row};
 
-        if (row < WIDTH && row >= 0 && col < HEIGHT && col >= 0) {
+        if (row < HEIGHT && row >= 0 && col < WIDTH && col >= 0) {
           cells[position]->setObstacle(true);
         }
       } else if (Mouse::isButtonPressed(Mouse::Right)) {      // remove obstacle
@@ -101,11 +115,6 @@ int main(){
           cells[position]->setObstacle(false);
         }
       }
-    }
-
-    if (learning) {
-      // update sim here
-      iteration++;
     }
 
     // KEYBOARD EVENTS =========================================
@@ -184,9 +193,6 @@ int main(){
     renderWindow.draw(iterationText);
     renderWindow.display();
   }
-
-  delete startCell;
-  delete goalCell;
 
   for (int row = 0; row < HEIGHT; row ++){
     for (int col = 0; col < WIDTH; col ++){

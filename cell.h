@@ -17,6 +17,8 @@ class Cell{
 
         bool isObstacle();
     
+        bool isGoal();
+
         void setExplored(bool);
 
         bool isExplored();

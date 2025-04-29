@@ -1,4 +1,5 @@
 #include "car.h"
+#include "position.h"
 
 #include <cmath>
 #include <limits>
@@ -15,21 +16,16 @@ Car::Car(float turnRadius, float driveDist, std::pair<float, float> initPosition
 };
 
 void Car::takeAction(int action) {
-  dubinsMove(action);
+  Position newPos = dubinsMove(action);
+  _position = newPos.getXY();
+  _theta = newPos.getThetaRad();
 }
 
-int Car::takeRandomAction() {
-  std::uniform_int_distribution<> actionDistribution(0, _numPossibleActions - 1);
-  
-  // randomly generate an integer to represent the action between 0 and number of possible actions - 1
-  int action = actionDistribution(gen);
-  
-  dubinsMove(action);
-
-  return action;
+Position Car::getPosition() {
+  return Position(_position, _theta);
 }
 
-void Car::dubinsMove(int action) {
+Position Car::dubinsMove(int action) {
   float maxCurvature = 1.0 / _turnRadius;
   float curvatureRange = 2.0 * maxCurvature;
   float curvatureStep = curvatureRange / (_numPossibleActions - 1.0);
@@ -80,8 +76,8 @@ void Car::dubinsMove(int action) {
       nextTheta = _theta;
     }
   }
-  _theta = nextTheta;
-  _position = nextPosition;
+
+  return Position(nextPosition, nextTheta);
 }
 
 std::random_device Car::rd;
