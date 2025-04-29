@@ -1,6 +1,7 @@
 #ifndef Q_LEARNER_HEADER
 #define Q_LEARNER_HEADER
 
+#include "agent-history-node.h"
 #include "car.h"
 #include "cell.h"
 #include <map>
@@ -9,9 +10,11 @@
 
 class QLearner {
   public:
-    QLearner(int stateSpaceWidth, int stateSpaceHeight, std::map<std::pair<int, int>, Cell*> stateSpace, float cellSize, float discountFactor, float learningRate, float initialEpsilon, float finalEpsilon, int numActions, int numEpochs, int maxIterations, std::pair<float, float> agentInitialPos);
+    QLearner(int stateSpaceWidth, int stateSpaceHeight, std::map<std::pair<int, int>, Cell*> stateSpace, float cellSize, float discountFactor, float learningRate, float initialEpsilon, float finalEpsilon, int numActions, int numEpochs, int maxIterations, std::pair<float, float> agentInitialPos, int epochsToStore);
     
-    void train();
+    ~QLearner();
+
+    std::vector<AgentHistoryNode*> train();
 
     bool doneLearning();
     int getCurrentEpoch();
@@ -26,15 +29,20 @@ class QLearner {
     int _numEpochs;
     int _currentEpoch;
 
+    int _epochsToStore;
+    std::vector<AgentHistoryNode*> _agentHistories;
+    AgentHistoryNode* _lastNode;
+
     int _maxIterationsPerEpoch;
     int _currentIteration; 
 
+    // STATE SPACE
     int _width;
     int _height;
     float _cellSize;
-
     std::map<std::pair<int, int>, Cell*> _stateSpace;
-    
+
+    // EPSILON GREEDY VALUES
     float _initialEpsilon;
     float _finalEpsilon;
 
@@ -46,7 +54,6 @@ class QLearner {
     // CAR AGENT
     Car* _agent;
     std::pair<float, float> _agentInitialPosition;
-
     int _numActions;
     const float _turnRadius = 8.0;
     const float _driveDist = 15.0;
@@ -73,6 +80,5 @@ class QLearner {
     //  if each agent begins at same position, we can walk over each action and visualize them to see all the different tries 
     //  maybe data structure is linked list as num of actions will be different, go until nullptr 
 };
-
 
 #endif // !Q_LEARNER_HEADER

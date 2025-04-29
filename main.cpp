@@ -1,9 +1,14 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/CircleShape.hpp>
+#include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <iostream>
 #include <cmath>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "agent-history-node.h"
 #include "cell.h"
 #include "q-learner.h"
 
@@ -17,6 +22,9 @@ const int HEIGHT = 30;
 
 // size of cell, pixels
 const int CELL_SIZE = 30;
+
+const int RENDER_WINDOW_WIDTH = WIDTH * CELL_SIZE + 1;
+const int RENDER_WINDOW_HEIGHT = HEIGHT * CELL_SIZE + 2;
 
 const pair<int, int> start = {0, HEIGHT - 1};
 const pair<int, int> goal = {WIDTH - 1, 0};
@@ -39,6 +47,13 @@ Color gridColor(greyValue, greyValue, greyValue);
 RectangleShape verticalLine(Vector2f(2, CELL_SIZE * HEIGHT));
 RectangleShape horizontalLine(Vector2f(CELL_SIZE * WIDTH, 2));
 
+
+Vector2f convertCoords(pair<float, float> coords) {
+  return Vector2f(coords.first, RENDER_WINDOW_HEIGHT - coords.second);
+}
+
+// TODO: create more complex reward function that uses euclidean distance to the goal as reward for each path point
+// TODO: if I change the drive distance to 25 instead of 15, there is sometimes a segfault... need to figure out why
 
 int main(){
 
@@ -72,49 +87,55 @@ int main(){
 
   RectangleShape cellRect(Vector2f(CELL_SIZE, CELL_SIZE));
 
+  CircleShape agentCirlce(5.0);
+  agentCirlce.setFillColor(Color::Cyan);
+
   bool learning = false;
   int iteration = 0;
 
   // Q learning algorithm 
   // =========================================================================================================================================================
   const int EPOCHS = 10000;
-  const float GAMMA = 0.7;
-  const float ALPHA = 0.8;
-  const float initEpsilon = 0.9;
-  const float finalEpsilon = 0.2;
+  const float GAMMA = 0.7;            // discount factor
+  const float ALPHA = 0.8;            // learning rate
+  const float initEpsilon = 0.9;      // initial chance of exploration rather than exploitation
+  const float finalEpsilon = 0.2;     // final chance of exploration rather than exploitation
   const int numActions = 5;
-  const int maxIterationsPerEpoch = 500;
+  const int maxIterationsPerEpoch = 2000;
+  const int epochsToStore = 50;
 
-  QLearner qLearner = QLearner(WIDTH, HEIGHT, cells, CELL_SIZE, GAMMA, ALPHA, initEpsilon, finalEpsilon, numActions, EPOCHS, maxIterationsPerEpoch, {CELL_SIZE / 2.0, CELL_SIZE / 2.0});
-  qLearner.train();
+  QLearner qLearner = QLearner(WIDTH, HEIGHT, cells, CELL_SIZE, GAMMA, ALPHA, initEpsilon, finalEpsilon, numActions, EPOCHS, maxIterationsPerEpoch, {CELL_SIZE / 2.0, CELL_SIZE / 2.0}, epochsToStore);
+  vector<AgentHistoryNode*> agentHistories = qLearner.train();
+  vector<AgentHistoryNode*> currentNode = agentHistories;
   // =========================================================================================================================================================
 
   // RENDER WINDOW
   // =========================================================================================================================================================
-  RenderWindow renderWindow(VideoMode(WIDTH * CELL_SIZE + 1, HEIGHT * CELL_SIZE + 2), "Q Learning");
+  RenderWindow renderWindow(VideoMode(RENDER_WINDOW_WIDTH, RENDER_WINDOW_HEIGHT), "Q Learning");
+  renderWindow.setFramerateLimit(60);
   while(renderWindow.isOpen()){
 
     mousePosition = {float(Mouse::getPosition(renderWindow).x), float(Mouse::getPosition(renderWindow).y)};
 
-    if (!learning && !(iteration >= EPOCHS)){
-      if (Mouse::isButtonPressed(Mouse::Left)){       // set as obstacle
-        int col = mousePosition[0] / CELL_SIZE;
-        int row = mousePosition[1] / CELL_SIZE;
-        pair<int, int> position = {col, row};
-
-        if (row < HEIGHT && row >= 0 && col < WIDTH && col >= 0) {
-          cells[position]->setObstacle(true);
-        }
-      } else if (Mouse::isButtonPressed(Mouse::Right)) {      // remove obstacle
-        int row = mousePosition[0] / CELL_SIZE;
-        int col = mousePosition[1] / CELL_SIZE;
-        pair<int, int> position = {row, col};
-
-        if (row < WIDTH && row > 0 && col < HEIGHT && col > 0) {
-          cells[position]->setObstacle(false);
-        }
-      }
-    }
+    /*if (!learning && !(iteration >= EPOCHS)){*/
+    /*  if (Mouse::isButtonPressed(Mouse::Left)){       // set as obstacle*/
+    /*    int col = mousePosition[0] / CELL_SIZE;*/
+    /*    int row = mousePosition[1] / CELL_SIZE;*/
+    /*    pair<int, int> position = {col, row};*/
+    /**/
+    /*    if (row < HEIGHT && row >= 0 && col < WIDTH && col >= 0) {*/
+    /*      cells[position]->setObstacle(true);*/
+    /*    }*/
+    /*  } else if (Mouse::isButtonPressed(Mouse::Right)) {      // remove obstacle*/
+    /*    int row = mousePosition[0] / CELL_SIZE;*/
+    /*    int col = mousePosition[1] / CELL_SIZE;*/
+    /*    pair<int, int> position = {row, col};*/
+    /**/
+    /*    if (row < WIDTH && row > 0 && col < HEIGHT && col > 0) {*/
+    /*      cells[position]->setObstacle(false);*/
+    /*    }*/
+    /*  }*/
+    /*}*/
 
     // KEYBOARD EVENTS =========================================
     if (!learning && Keyboard::isKeyPressed(Keyboard::Space)){   // space to start search
@@ -188,6 +209,15 @@ int main(){
       renderWindow.draw(horizontalLine);
     }
     // ==========================================================
+    
+    for (int i = 0; i < agentHistories.size(); i++) {
+      agentCirlce.setPosition(convertCoords(agentHistories[i]->getPosition()));
+      if (agentHistories[i]->getNext() != nullptr) {
+        agentHistories[i] = agentHistories[i]->getNext();
+      }
+      renderWindow.draw(agentCirlce);
+    }
+
     iterationText.setString("Iteration: " + to_string(iteration));
     renderWindow.draw(iterationText);
     renderWindow.display();
