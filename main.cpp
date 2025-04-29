@@ -44,11 +44,6 @@ int main(){
 
   vector<float> mousePosition;
 
-  // RENDER WINDOW
-  // =================================================================================================
-  RenderWindow renderWindow(VideoMode(WIDTH * CELL_SIZE + 1, HEIGHT * CELL_SIZE + 2), "Q Learning");
-  // =================================================================================================
-
   std::map<std::pair<int, int>, Cell*> cells;
 
   // fill state space 
@@ -80,6 +75,8 @@ int main(){
   bool learning = false;
   int iteration = 0;
 
+  // Q learning algorithm 
+  // =========================================================================================================================================================
   const int EPOCHS = 10000;
   const float GAMMA = 0.7;
   const float ALPHA = 0.8;
@@ -88,11 +85,13 @@ int main(){
   const int numActions = 5;
   const int maxIterationsPerEpoch = 500;
 
-  // Q learning algorithm 
   QLearner qLearner = QLearner(WIDTH, HEIGHT, cells, CELL_SIZE, GAMMA, ALPHA, initEpsilon, finalEpsilon, numActions, EPOCHS, maxIterationsPerEpoch, {CELL_SIZE / 2.0, CELL_SIZE / 2.0});
-
   qLearner.train();
+  // =========================================================================================================================================================
 
+  // RENDER WINDOW
+  // =========================================================================================================================================================
+  RenderWindow renderWindow(VideoMode(WIDTH * CELL_SIZE + 1, HEIGHT * CELL_SIZE + 2), "Q Learning");
   while(renderWindow.isOpen()){
 
     mousePosition = {float(Mouse::getPosition(renderWindow).x), float(Mouse::getPosition(renderWindow).y)};
