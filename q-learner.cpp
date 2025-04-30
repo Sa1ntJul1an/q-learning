@@ -1,4 +1,5 @@
 #include "q-learner.h"
+#include "agent-history-node.h"
 #include "car.h"
 #include "cell.h"
 #include "position.h"
@@ -6,9 +7,10 @@
 #include <limits>
 #include <random>
 #include <utility>
+#include <vector>
 
 
-QLearner::QLearner(int width, int height, std::map<std::pair<int, int>, Cell*> stateSpace, float cellSize, float gamma, float alpha, float initEpsilon, float finalEpsilon, int numActions, int numEpochs, int maxIterationsPerEpoch, std::pair<float, float> agentInitialPos) {
+QLearner::QLearner(int width, int height, std::map<std::pair<int, int>, Cell*> stateSpace, float cellSize, float gamma, float alpha, float initEpsilon, float finalEpsilon, int numActions, int numEpochs, int maxIterationsPerEpoch, std::pair<float, float> agentInitialPos, int epochsToStore) {
   _width = width;
   _height = height;
   _cellSize = cellSize;
@@ -25,6 +27,9 @@ QLearner::QLearner(int width, int height, std::map<std::pair<int, int>, Cell*> s
   _maxIterationsPerEpoch = maxIterationsPerEpoch;
   _numEpochs = numEpochs;
   _currentEpoch= 0;
+  _epochsToStore = epochsToStore;
+
+  _lastNode = nullptr;
 
   _learningComplete = false;
 
@@ -41,9 +46,15 @@ QLearner::QLearner(int width, int height, std::map<std::pair<int, int>, Cell*> s
   
   // begin a new epoch (initialize agent to initial position)
   newEpoch();
-};
+}
 
-void QLearner::train() {
+QLearner::~QLearner() {
+  for (AgentHistoryNode* node : _agentHistories) {
+    delete node;
+  }
+}
+
+std::vector<AgentHistoryNode*> QLearner::train() {
   // train until all epochs complete 
   std::cout << "Training...\n";
   int lastEpochLogged = getCurrentEpoch();
@@ -55,6 +66,7 @@ void QLearner::train() {
     update();
   }
   std::cout << "Training complete.\n";
+  return _agentHistories;
 }
 
 void QLearner::update() {
@@ -90,7 +102,13 @@ void QLearner::update() {
 
   _qMatrix[state][action] = Q_new;
 
-  if (_currentIteration > _maxIterationsPerEpoch) {
+  if (_lastNode != nullptr) {
+    AgentHistoryNode* newNode = new AgentHistoryNode(_agent->getPosition().getXY(), _agent->getPosition().getThetaRad());
+    _lastNode->addNext(newNode);
+    _lastNode = newNode;
+  }
+
+  if (_currentIteration >= _maxIterationsPerEpoch) {
     newEpoch();
   }
 
@@ -199,11 +217,18 @@ int QLearner::getBestAction() {
 void QLearner::newEpoch() {
   // restart agent to initial position
   if (_currentEpoch > 0) {
+    _lastNode = nullptr;
     delete _agent;
   }
-  _agent = new Car(_turnRadius, _driveDist, _agentInitialPosition, _initAngleRad, _numActions);
-  _currentIteration = 0;
   _currentEpoch ++;
+  _agent = new Car(_turnRadius, _driveDist, _agentInitialPosition, _initAngleRad, _numActions);     // TODO: if num epochs to store is not a factor of total epochs, we will actually get one extra stored epoch with this logic
+  if (_currentEpoch % _epochsToStore == 0 || (_epochsToStore % 2 != 0 && _currentEpoch == _numEpochs)) {    // if we are at an epoch we want to store history of 
+    if (_lastNode == nullptr) {   // we have not begun a linked list 
+      _lastNode = new AgentHistoryNode(_agent->getPosition().getXY(), _agent->getPosition().getThetaRad());
+      _agentHistories.push_back(_lastNode);
+    }
+  }
+  _currentIteration = 0;
 }
 
 std::random_device QLearner::rd;

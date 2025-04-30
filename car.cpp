@@ -13,7 +13,7 @@ Car::Car(float turnRadius, float driveDist, std::pair<float, float> initPosition
   _position = initPosition;
   _theta = initAngleRad;
   _numPossibleActions = numPossibleActions;
-};
+}
 
 void Car::takeAction(int action) {
   Position newPos = dubinsMove(action);
