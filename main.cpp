@@ -87,8 +87,8 @@ int main(){
 
   RectangleShape cellRect(Vector2f(CELL_SIZE, CELL_SIZE));
 
-  CircleShape agentCirlce(5.0);
-  agentCirlce.setFillColor(Color::Cyan);
+  RectangleShape agentRectangle(Vector2f(10.0, 5.0));
+  agentRectangle.setFillColor(Color::Cyan);
 
   bool learning = false;
   int iteration = 0;
@@ -211,11 +211,12 @@ int main(){
     // ==========================================================
     
     for (int i = 0; i < agentHistories.size(); i++) {
-      agentCirlce.setPosition(convertCoords(agentHistories[i]->getPosition()));
+      agentRectangle.setPosition(convertCoords(agentHistories[i]->getPosition()));
+      agentRectangle.setRotation((180.0 / M_PI) * agentHistories[i]->getThetaRad());
       if (agentHistories[i]->getNext() != nullptr) {
         agentHistories[i] = agentHistories[i]->getNext();
       }
-      renderWindow.draw(agentCirlce);
+      renderWindow.draw(agentRectangle);
     }
 
     iterationText.setString("Iteration: " + to_string(iteration));
